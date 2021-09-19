@@ -1,0 +1,6 @@
+Shultz 12000
+Ivanov 21000
+Sannikov 22000
+Petrov 19000
+Terentev 50000
+Makovsky 30000
