@@ -4,6 +4,7 @@ import json
 from random import randint
 
 PATH = 'random_gif.json'
+
 params = {
     'api_key': 'eadMwxGByABL7fhcLimkOZTf4lb2vcOu'
 }
