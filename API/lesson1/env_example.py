@@ -1,7 +1,7 @@
 import os
 from dotenv import load_dotenv
 
-load_dotenv('./.env')
+load_dotenv('.env')
 
 key = "NAME"
 result1 = os.environ[key]

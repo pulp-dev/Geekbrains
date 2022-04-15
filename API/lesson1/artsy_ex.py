@@ -3,7 +3,7 @@ from dotenv import load_dotenv
 import os
 from pprint import pprint
 
-load_dotenv("./.env")
+load_dotenv(".env")
 
 client_id = os.environ.get("CLIENT")
 client_secret = os.environ.get("SECRET")
