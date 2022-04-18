@@ -2,8 +2,7 @@ import json
 import requests
 
 SAVE_PATH = 'repos.json'
-
-TOKEN = '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'
+TOKEN = 'fdlksfj'
 
 
 class GitHubUser:
