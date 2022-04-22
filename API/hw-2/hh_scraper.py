@@ -1,13 +1,21 @@
 from bs4 import BeautifulSoup as bs
 import requests
 
+from pymongo import MongoClient
+
 import time
 import json
+import re
 
 
 HEADERS = {
     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) '
                   'Chrome/99.0.4844.84 Safari/537.36 '
+}
+MONGO = {
+    'uri': 'mongodb://localhost:27017',
+    'database': 'hh_scraper',
+    'collection': 'jobs'
 }
 info_to_search = {
     'name': {'target': '_blank'},
@@ -17,7 +25,7 @@ info_to_search = {
 
 
 class HHScraper:
-    def __init__(self, headers, vacancy):
+    def __init__(self, headers, vacancy, mongo_uri, mongo_db, mongo_collection):
         self.headers = headers
         # преобразуем вакансию заменой пробелов на плюсы
         edited_vacancy = '+'.join(vacancy.split())
@@ -26,6 +34,33 @@ class HHScraper:
                    f'=description&text={edited_vacancy}&from=suggest_post '
         self.params = {'page': 1}
         self.info = {}
+
+        self.mongo_uri = mongo_uri
+        self.mongo_db = mongo_db
+        self.mongo_collection = mongo_collection
+
+    @staticmethod
+    def extract_text(element, key):
+        return element.find(attrs=info_to_search[key]).text
+
+    @staticmethod
+    def cursor_length(cursor):
+        count = 0
+        for i in cursor:
+            count += 1
+        return count
+
+    def push_to_db(self, collection, doc, check_for_individuality=False):
+        if check_for_individuality:
+            cur = collection.find({
+                'URL': doc['URL']
+            })
+            if self.cursor_length(cur) == 0:
+                collection.insert_one(doc)
+            else:
+                print('Уже есть')
+        else:
+            collection.insert_one(doc)
 
     def request(self):
         try:
@@ -36,10 +71,6 @@ class HHScraper:
             self.request()
         return r
 
-    @staticmethod
-    def extract_text(element, key):
-        return element.find(attrs=info_to_search[key]).text
-
     def extract_info(self, vacancies):
         for element in vacancies:
             name = self.extract_text(element, 'name')
@@ -47,14 +78,26 @@ class HHScraper:
                 name += ' '
 
             try:
-                salary = self.extract_text(element, 'salary')
-                while '\u202f' in salary:
-                    salary = salary.replace('\u202f', '')
-            except AttributeError:
-                salary = 'Не указано'
+                string = self.extract_text(element, 'salary')
+                salary = int(re.search(r'[ ]+[0-9]+', string).group().strip()) * 1000
+            except:
+                salary = 0
 
             url = str(element.find(attrs=info_to_search['url'])).split()[3][6:-1]
             self.info[name] = [salary, url, 'hh.ru']
+
+            with MongoClient(self.mongo_uri) as client:
+                db = client[self.mongo_db]
+                collection = db[self.mongo_collection]
+
+                doc = {
+                    'Title': name,
+                    'Salary': salary,
+                    'URL': url,
+                    'Source': 'hh.ru'
+                }
+
+                self.push_to_db(collection, doc, check_for_individuality=True)
 
     def next_page(self):
         soup = bs(self.request().content, 'html.parser')
@@ -73,10 +116,20 @@ class HHScraper:
         with open('save.json', 'w', encoding='utf-8') as f:
             json.dump(self.info, f, indent=2, ensure_ascii=False)
 
+    def search_by_salary(self, down_limit):
+        with MongoClient(self.mongo_uri) as client:
+            db = client[self.mongo_db]
+            collection = db[self.mongo_collection]
+
+            cur = collection.find({
+                'Salary': {'$gt': down_limit}
+            })
+            return list(cur)
+
 
 if __name__ == '__main__':
     search_request = input()
-    scraper = HHScraper(HEADERS, search_request)
+    scraper = HHScraper(HEADERS, search_request, MONGO['uri'], MONGO['database'], MONGO['collection'])
     scraper.pipeline()
     scraper.save_info()
-
+    result = scraper.search_by_salary(100000)
