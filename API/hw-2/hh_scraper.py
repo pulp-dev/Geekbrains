@@ -104,13 +104,13 @@ class HHScraper:
         if len(soup.find_all('a', attrs={'class': 'bloko-button'}, text='дальше')) == 0:
             return
         self.params['page'] += 1
-        self.pipeline()
 
     def pipeline(self):
         soup = bs(self.request().content, 'html.parser')
         vacancies = soup.find_all('div', attrs={'class': 'vacancy-serp-item-body__main-info'})
         self.extract_info(vacancies)
         self.next_page()
+        self.pipeline()
 
     def save_info(self):
         with open('save.json', 'w', encoding='utf-8') as f:
