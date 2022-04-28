@@ -32,7 +32,7 @@ class HHScraper:
         # подставляем в url
         self.url = f'https://kirov.hh.ru/search/vacancy?search_field=name&search_field=company_name&search_field' \
                    f'=description&text={edited_vacancy}&from=suggest_post '
-        self.params = {'page': 1}
+        self.params = {'page': 0}
         self.info = {}
 
         self.mongo_uri = mongo_uri

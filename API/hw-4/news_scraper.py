@@ -132,6 +132,3 @@ scraper.pipeline()
 
 scraper = YandexNewsScraper(HEADERS, yandex_url)
 scraper.pipeline()
-
-# mongo = MongoDBConnector(mongo_params['uri'], mongo_params['database'], mongo_params['collection'])
-# mongo.clear_collection()
